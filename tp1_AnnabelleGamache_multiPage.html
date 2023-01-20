@@ -1,0 +1,484 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>TP1, formulaire d'inscription multipage</title>
+  <link rel="stylesheet" href="css/styles.css?v=1.0">
+
+  <script>
+    'use strict';
+    window.addEventListener("load", function() {
+
+      /*
+        Validation des champs du formulaire :
+        - tous obligatoires
+        - nom un ou plusieurs mots alphabétiques séparés par un espace, un tiret ou une apostrophe.
+        - prenom un ou plusieurs mots alphabétiques séparés par un espace, un tiret ou une apostrophe.
+        - telephone format "xxx xxx-xxxx" où les x sont des chiffres.
+        - codePostal sous la forme A1B 2C3, lettres D,F,I,O,Q,U non permises, ainsi que W et Z en première position (
+        - anneeConstruction entre 1800 et l'année en cours.
+        - superficie entre 100 et 9999 pi2.
+        - nbPieces de 1 à 20 pièces.
+        - presentation au moins 5 mots.
+
+      */
+
+      let f = form1;
+      let msgErr = "";
+      let erreur = false;
+      let val;
+      let regExp;
+      let group1Valide = false;
+      let group2Valide = false;
+      let group3Valide = false;
+      let tabPages = [];
+      let page = 1;
+      let listPages = document.querySelectorAll("fieldset");
+       listPages.forEach(fieldset =>{
+         tabPages.push(fieldset);
+       });
+
+      /*Début du formulaire on ne voit que le premier group appel de la fonction DisplayMe() voir bas du script*/ 
+      DisplayMe(tabPages[0],tabPages[1],tabPages[2]);
+
+      let controles = {
+        titre:              valideTitre, // référence de la fonction de validation associée au champ 
+        nom:                valideNom,
+        prenom:             validePrenom,
+        telephone:          valideTel,
+        type:               valideType,
+        codePostal:         valideCodePostal,
+        anneeConstruction:  valideAnneeConstruction,
+        superficie:         valideSuperficie,
+        nbPieces:           valideNbPieces,
+        "aProximiteDe[]" :      valide_aProximiteDe,
+        presentation:       validePresentation,
+        "contacts[]":           valideContacts
+      };
+
+      
+
+       /** Event click sur le bouton name="suivant" pour valider tous les champs du formulaire du fieldset courant */
+       f.suivant.addEventListener("click", function (evt) {
+        if (page == 1 && group1Valide){
+          DisplayMe(tabPages[1],tabPages[0],tabPages[2]);
+          f.precedent.removeAttribute("disabled");
+          if(group2Valide==false) f.suivant.setAttribute("disabled", "disabled");
+          page = 2;
+        }else if (page == 2 && group2Valide){
+            DisplayMe(tabPages[2],tabPages[0],tabPages[1]);
+            f.precedent.removeAttribute("disabled");
+            f.suivant.removeAttribute("disabled");
+            page= 3;
+        }
+        if (page == 3 && group3Valide == false){
+          f.suivant.setAttribute("disabled", "disabled");
+        }
+        if (page == 3 && group3Valide == true){
+          f.envoi.removeAttribute("disabled");
+        }
+
+        console.log("PAGE:"+page);
+        console.log("G1: "+group1Valide);
+        console.log("g2: "+group2Valide);
+        console.log("g3: "+group3Valide);
+
+      });
+
+      f.precedent.addEventListener("click", function (evt) {
+        if(page ==2){
+          DisplayMe(tabPages[0],tabPages[1],tabPages[2]);
+          f.suivant.removeAttribute("disabled");
+          f.precedent.setAttribute("disabled", "disabled");
+          page =1;
+        }else if(page ==3){
+          DisplayMe(tabPages[1],tabPages[0],tabPages[2]);
+          f.suivant.removeAttribute("disabled");
+         // f.precedent.setAttribute("disabled", "disabled");
+          page =2;
+        }
+
+      });
+
+
+
+      /*Event change sur tous les éléments du formulaire pour valider chaque champ du formulaire dès que l'utlisateur sort du champ*/
+      f.addEventListener("input", function (evt) {
+        let controle = evt.target.name; 
+        controles[controle](evt);
+
+
+       
+        /*Verification si tous les elements du formulaire par page est valide et changement d'état du bouton selon le cas*/
+        /*page 1 */
+        if (page ==1){
+          if (valideTitre() && valideNom() && validePrenom() && valideTel()){
+            group1Valide = true;
+            f.suivant.removeAttribute("disabled");
+          }else{
+            group1Valide = false;
+            f.suivant.setAttribute("disabled", "disabled");
+          }
+        }
+         /*page 2 */
+        if (page == 2){
+          if (valideType() && valideCodePostal() && valideAnneeConstruction() && valideSuperficie() && valideNbPieces() && valide_aProximiteDe() && validePresentation()){
+            group2Valide = true;
+            f.suivant.removeAttribute("disabled");
+          }else{
+            group2Valide = false;
+            f.suivant.setAttribute("disabled", "disabled");
+          }
+        }
+        /*page 3 */
+        if (page ==3){
+          if (valideContacts()){
+            group3Valide = true;
+          }else{
+            group3Valide = false;
+          }
+        }  
+        
+        /*bouton envoi disabled ou non */
+        (group3Valide && group2Valide && group3Valide) ? f.envoi.removeAttribute("disabled") : f.envoi.setAttribute("disabled", "disabled");;
+
+      });
+
+
+
+
+        
+      /* Valider le champ titre*/
+      function valideTitre() { 
+        erreur = false;     
+        msgErr = "";
+        val = f.titre.value; 
+        if (val === "") msgErr = "Obligatoire";
+        if (msgErr !== "") erreur = true;
+        document.getElementById("errTitre").innerHTML = msgErr;
+        return !erreur;
+        
+      }
+      
+      /* Valider le champ nom*/
+      function valideNom() {
+        erreur = false;     
+        msgErr = "";
+        val = f.nom.value;
+        val = val.trim();
+        if(val === ""){
+            msgErr = "Obligatoire";
+            }else{
+                regExp = /^[A-Za-z]+([- '][A-Za-z]*)?$/ ;
+                if(!regExp.test(val)){
+                msgErr ="Nom invalide";
+                }
+            }
+        if (msgErr !== "") erreur = true;
+        document.getElementById("errNom").innerHTML = msgErr;
+        return !erreur;
+      }
+
+    /* Valider le champ prenom*/
+      function validePrenom() {
+        erreur = false;   
+        msgErr = "";
+        val = f.prenom.value;
+        val = val.trim();
+        if(val === ""){
+            msgErr = "Obligatoire";
+            }else{
+                regExp = /^[A-Za-z]+([- '][A-Za-z]*)?$/ ;
+                if(!regExp.test(val)){
+                msgErr ="Prénom invalide";
+                }
+            }
+        if (msgErr !== "") erreur = true;
+        document.getElementById("errPrenom").innerHTML = msgErr;
+        return !erreur;
+      }
+
+      /* Valider le champ téléphone*/
+      function valideTel() {
+        erreur = false;     
+        msgErr = "";
+        val = f.telephone.value;
+        val = val.trim();
+        if(val === ""){
+            msgErr = "Obligatoire";
+            }else{
+                regExp = /^\d{3}([ -])?\d{3}([ -])?\d{4}$/ ;
+                if(!regExp.test(val)){
+                msgErr ="Format invalide ex: xxx xxx-xxxx / xxx-xxx-xxxx / xxxxxxxxxx ";
+                }
+            }
+        if (msgErr !== "") erreur = true;
+        document.getElementById("errTelephone").innerHTML = msgErr;
+        return !erreur;
+      }
+
+      /* Valider le champ type*/
+      function valideType() {
+        erreur = false;     
+        msgErr = "";
+        val =  f.type.value;
+        val = val.trim();
+        if(val === "") msgErr = "Obligatoire";
+        if (msgErr !== "") erreur = true;
+        document.getElementById("errType").innerHTML = msgErr;
+        return !erreur;
+      }
+
+      /* Valider le code postal*/
+      function valideCodePostal() { 
+        erreur = false;  
+        msgErr = "";
+        val = f.codePostal.value; 
+        val = val.trim();
+        if(val === ""){
+            msgErr = "Obligatoire";
+            }else{
+                regExp = /^[ABCEGHJ-NPRSTVXY]\d[ABCEGHJ-NPRSTV-Z][ -]?\d[ABCEGHJ-NPRSTV-Z]\d$/ ;
+                if(!regExp.test(val)){
+                msgErr ="Code Postal invalide ex: A1B 2C3 ou A1B2C3";
+                }
+            }
+        if (msgErr !== "") erreur = true;
+        document.getElementById("errCodePostal").innerHTML = msgErr;
+        return !erreur;
+      }
+
+    /* Valider le champ année de construction*/
+      function valideAnneeConstruction() {
+        erreur = false;  
+        msgErr = "";
+        val = f.anneeConstruction.value; 
+        val = val.trim();
+        if(val === ""){
+            msgErr = "Obligatoire";
+            }else{
+                regExp = /^\d{4}$/ ;
+                if(!regExp.test(val) || val < 1800 || val > 2022){
+                msgErr ="Invalide chiffre 1800 et l'année en cours.";
+                }
+            }
+        if (msgErr !== "") erreur = true;
+        document.getElementById("errAnneeConstruction").innerHTML = msgErr;
+        return !erreur;
+      }
+
+      /* Valider le champ superficie*/
+      function valideSuperficie() { 
+        erreur = false;    
+        msgErr = "";
+        val = f.superficie.value; 
+        val = val.trim();
+        if(val === ""){
+            msgErr = "Obligatoire";
+            }else{
+                regExp = /^[1-9](\d{2})[0-9]?$/ ;   /*100 a 9999*/
+                if(!regExp.test(val) || val < 100 || val > 9999){
+                msgErr ="Invalide chiffre 100 et 9999.";
+                }
+            }
+        if (msgErr !== "") erreur = true;
+        document.getElementById("errSuperficie").innerHTML = msgErr;
+        return !erreur;
+      }
+
+    /* Valider le champ nombre de pièce*/
+      function valideNbPieces() {  
+        erreur = false;  
+        msgErr = "";
+        val = f.nbPieces.value; 
+        val = val.trim();
+        if(val === ""){
+            msgErr = "Obligatoire";
+            }else{
+                regExp = /^([1-9]|[1][0-9]|2[0])$/ ; /*1-20*/
+                if(!regExp.test(val)){
+                msgErr ="Nombre de pièces invalide 1 à 20";
+                }
+            }
+        if (msgErr !== "") erreur = true;
+        document.getElementById("errNbPieces").innerHTML = msgErr;
+        return !erreur;
+      }
+
+     /* Valider le champ à proximité de select multiple*/
+      function valide_aProximiteDe() {
+        erreur = false;  
+        msgErr = "";
+        val = f['aProximiteDe[]'].value; 
+        if (val === "") msgErr = "Obligatoire";
+        if (msgErr !== "") erreur = true;
+        document.getElementById("errAProximiteDe[]").innerHTML = msgErr;
+        return !erreur;
+      }
+
+      /* Valider le champ présentation texteaera*/
+      function validePresentation() { 
+        erreur = false;   
+        msgErr = "";
+        val = f.presentation.value; 
+        if(val === ""){
+            msgErr = "Obligatoire";
+            }else{
+                let nbMot = val.split(" ").length;
+                console.log(nbMot);
+                if(nbMot <= 5){   /*minimum 5 mots*/
+                msgErr ="Minimum 5 mots";
+                }
+            }
+        if (msgErr !== "") erreur = true;
+        document.getElementById("errPresentation").innerHTML = msgErr;
+        return !erreur;
+      }
+
+      /* Valider le champ contact checkbox*/
+      function valideContacts() {
+        erreur = false;  
+        msgErr = "";
+        let isCheck = false;
+        for (let indice in f['contacts[]']) {
+          if (f['contacts[]'][indice].checked) isCheck=true;
+        }
+        if (!isCheck) msgErr = "Obligatoire";
+        if (msgErr !== "") erreur = true;
+        document.getElementById("errContacts[]").innerHTML = msgErr;
+        return !erreur;
+      }
+
+      function DisplayMe(x,y,z) {
+        x.style.display ="block";
+        y.style.display ="none";
+        z.style.display ="none";
+      }
+    });
+
+  </script>
+
+
+
+</head>
+
+<body> 
+   <form name="form1" action="test.php" method="post"> 
+    
+      <button type="button"  name="precedent" disabled>­­ <<­­ ­­­­</button>
+      <button type="button"  name="suivant" disabled>­­ >­­>­­ ­­­­</button>
+     <!-- <button type="button"  name="envoi" disabled>Envoyer</button>-->
+     <button type="submit" name="envoi" disabled>Envoyer</button> 
+
+
+    <!-- Premier groupe de composants-->
+    <fieldset data-groupe="1">
+      <legend><b>1/3 - Vos coordonnées (*)</b></legend>
+
+      <input type="radio" name="titre" id="madame" value="madame">
+      <label for="madame">Madame</label>
+      <input type="radio" name="titre" id="monsieur" value="monsieur">
+      <label for="monsieur">Monsieur</label>
+      <span id ="errTitre"></span>
+      <br>
+
+      <label for="nom">Nom :</label>
+      <input type="text" name="nom" id="nom" maxlength="100" placeholder="Votre nom">
+      <span id="errNom"></span>
+      <br>
+      
+      <label for="prenom">Prénom :</label>
+      <input type="text" name="prenom" id="prenom" maxlength="100" placeholder="Votre prénom">
+      <span id="errPrenom"></span>
+      <br>
+      
+      <label for="telephone">Numéro de téléphone :</label>
+      <input type="text" name="telephone" id="telephone" maxlength="100" placeholder="Par exemple 514 525-9567">
+      <span id="errTelephone"></span>
+      <br>
+      <p>(*) Tous les champs sont requis.</p>
+    </fieldset>
+
+
+    <!-- Deuxième groupe de composants-->
+    <fieldset data-groupe="2">
+      <legend><b>2/3 - Logement proposé (*)</b></legend>
+      
+      <label for="type">Type de logement :</label>
+      <select name="type" id="type">
+        <option value=""  >Sélectionnez le type de logement</option>
+        <option value="MA">Maison</option>
+        <option value="CO">Condo </option>
+        <option value="CH">Chalet</option>
+      </select>
+      <span id="errType"></span>
+      <br>
+      
+      <label for="codePostal">Code postal :</label>
+      <input type="text" name="codePostal" id="codePostal" placeholder="Par exemple A1B 2C3">
+      <span id="errCodePostal"></span>
+      <br>
+      
+      <label for="anneeConstruction">Année de construction :</label>
+      <input type="text" name="anneeConstruction" id="anneeConstruction">
+      <span id="errAnneeConstruction"></span>
+      <br>
+              
+      <label for="superficie">Superficie (pi2) :</label>
+      <input type="text" name="superficie" id="superficie">
+      <span id="errSuperficie"></span>
+      <br>
+      
+      <label for="nbPieces">Nombre de pièces :</label>
+      <input type="text" name="nbPieces" id="nbPieces">
+      <span id="errNbPieces"></span>
+      <br>
+      
+      <label for="aProximiteDe">A proximité de :</label>
+      <select name="aProximiteDe[]" id="aProximiteDe" multiple size=5>
+        <option value="AV">Autoroute/ Voie rapide</option>
+        <option value="TC">Transport en commun   </option>
+        <option value="PC">Piste cyclable        </option>					
+        <option value="EP">École primaire        </option>
+        <option value="ES">École secondaire      </option>
+        <option value="CE">Cégep                 </option>
+        <option value="GC">Garderie / CPE        </option>
+        <option value="HO">Hôpital               </option>
+        <option value="PE">Parc / Espace vert    </option>
+      </select>
+      <span id="errAProximiteDe[]"></span>
+      <br>
+              
+      <textarea name="presentation" rows="5" placeholder="Décrivez les atouts de votre logement"></textarea>
+      <span id="errPresentation"></span>
+      <br>
+      <p>(*) Tous les champs sont requis.</p>
+    </fieldset>
+
+		<fieldset data-groupe="3">
+			<legend><b>3/3 - Par quel(s) moyen(s) avez-vous eu connaissance de notre agence ?</b></legend>
+      <p>Merci de cocher au moins une de ces cases :</p>
+      <span id="errContacts[]"></span>
+      <br>
+      <label for="contact1">Publicité dans votre boîte aux lettres</label>
+      <input type="checkbox" name="contacts[]" id="contact1" value="1">
+      <br>
+      <label for="contact2">Publicité dans les journaux</label>
+      <input type="checkbox" name="contacts[]" id="contact2" value="2">
+      <br>
+      <label for="contact3">Bouche à oreille</label>
+      <input type="checkbox" name="contacts[]" id="contact3" value="3">
+      <br>
+      <label for="contact4">Lien depuis un autre site internet</label>
+      <input type="checkbox" name="contacts[]" id="contact4" value="4">
+      <br>
+      <label for="contact5">Par un moteur de recherche</label>
+      <input type="checkbox" name="contacts[]" id="contact5" value="5">
+      <br>
+      <label for="contact6">Autre</label>
+      <input type="checkbox" name="contacts[]" id="contact6" value="6">
+		</fieldset>
+
+  </form>
+</body>
+</html>
